@@ -1,0 +1,56 @@
+
+AWSTemplateFormatVersion: "2010-09-09"
+Description: 
+  This cloudformation template will create an ec2 instance of type t2.micro, a security group that opens port 80 (http) and 22 (ssh),
+  and it's used to deploy a static kitten carousel web application.
+  it should be found in a public github repo...
+Resources:
+  WebServerSG: 
+    Type: AWS::EC2::SecurityGroup
+    Properties: 
+      GroupDescription: Open port 80 and 22
+      GroupName: KittenWebServerSG
+      SecurityGroupIngress:
+       - CidrIp: 0.0.0.0/0
+         FromPort: 80
+         IpProtocol: TCP
+         ToPort: 80
+       - CidrIp: 0.0.0.0/0
+         FromPort: 22
+         IpProtocol: TCP
+         ToPort: 22
+      VpcId: vpc-08970fb231164ba49
+  WebServer:
+    Type: AWS::EC2::Instance
+    Properties:
+        ImageId: ami-0b5eea76982371e91
+        InstanceType: t2.micro
+        KeyName: Keypair-1
+        SecurityGroupIds:
+         - !Ref WebServerSG
+        SubnetId: subnet-04b7f44f4a88851c2
+        Tags:
+          - Key: Name
+            Value: Web_Server
+        UserData: 
+          Fn::Base64: |
+            #!/bin/bash
+            yum install httpd -y
+            cd /var/www/html
+            FOLDER="https://raw.githubusercontent.com/yhnkaya/Static-App-Cloudformation/main/static-web"
+            wget $FOLDER/index.html
+            wget $FOLDER/cat0.jpg
+            wget $FOLDER/cat1.jpg
+            wget $FOLDER/cat2.jpg
+            wget $FOLDER/cat3.png
+            systemctl start httpd
+            systemctl start httpd
+Outputs:
+  WebServerPublicIP:
+    Value:  !Sub
+      - "http://${KittensPublicIp}"
+      - KittensPublicIp: !GetAtt WebServer.PublicIp
+    Description: Public IP for Kittens Web Server
+
+
+    
